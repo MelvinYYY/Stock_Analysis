@@ -11,12 +11,18 @@ class Stock:
     
     def __init__(self, symbol, start, end):
         self.symbol = symbol
-        self.dtf = start
-        self.dtt = end
+        self.start = start
+        self.end = end
         self.all_min_max = []
         
-    def get_quote(self):
-        df = web.DataReader(self.symbol, 'yahoo', self.dtf, self.dtt) # This is easier to use
+    def get_hist_data(self):
+        """
+        Use pandas' DataReader to collect histocial data for a stock
+        Input: Stock Symbol, start time in datetime format, end time in datetime format
+        Output: A pandas dataframe contains histocial stock data, including date, open price,
+                the highest price, the lowest price, close price, adjusted close price, volume. 
+        """
+        df = web.DataReader(self.symbol, 'yahoo', self.start, self.end) # This is easier to use
         df = df.reset_index(drop = False)
         return df
     
@@ -25,7 +31,7 @@ class Stock:
         Return a list of Max/Min/Last Pricing information in a list
         """ 
         try:
-            df = self.get_quote()
+            df = self.get_hist_data()
             #df = df.reset_index()
             closeMax = df.iloc[df['Close'].idxmax()] 
             closeMin = df.iloc[df['Close'].idxmin()] 
@@ -60,7 +66,7 @@ class Stock:
         returns a data frame with average, upper band, and lower band
         """
         try:
-            df = self.get_quote()
+            df = self.get_hist_data()
             df['rolling_mean'] = df['Close'].rolling(window=window_size).mean()
             df['rolling_std']  = df['Close'].rolling(window=window_size).std()
             df['upper_band'] =  round(df['rolling_mean'] + ( df['rolling_std']*num_sd), 4)
@@ -96,7 +102,7 @@ class Stock:
                 indicator = "On Lower Band"
 
             else: 
-                indicator = " "
+                indicator = None
 
             return [self.symbol, indicator]
         
@@ -104,7 +110,7 @@ class Stock:
             print(" ")
             
             
-#### Use functions 
+#### Useful functions to run in multiprocessing 
 
 def All_Min_and_Max(symbol, start = datetime(2020,1,1), end = datetime.now()):
     amam = Stock(symbol, start, end )
@@ -114,3 +120,77 @@ def All_Min_and_Max(symbol, start = datetime(2020,1,1), end = datetime.now()):
 def All_BBands_Outliers(symbol, start = datetime(2020,3,1), end = datetime.now(), last_n_days = 3):
     return Stock(symbol, start, end).BBand_Outliers(last_n_days = last_n_days)
 
+
+def RSI(series, window=14, ewma=True):
+    """
+    Input: a pandas series of closing price data; window period defaulted as 14 days; default using ewma technique
+    Function: Calculate RSI 
+    Output, a series of RSI data 
+    """
+    # https://stackoverflow.com/questions/20526414/relative-strength-index-in-python-pandas
+    # Calculate difference and make the positive gains (up) and negative gains (down) Series
+    delta = series.diff().dropna(
+    )  # alternative: delta = series.diff().fillna(0)
+    up, down = delta.copy(), delta.copy()
+    up[up < 0] = 0
+    down[down > 0] = 0
+
+    if ewma == True:  # as default
+        # Calculate the EWMA
+        roll_up1 = up.ewm(com=window-1).mean()  # Close to Yahoo Finance
+        roll_down1 = down.abs().ewm(com=window-1).mean()  # Close to Yahoo Finance
+
+        # Calculate the RSI based on EWMA
+        RS1 = roll_up1 / roll_down1
+        RSI1 = round(100.0 - (100.0 / (1.0 + RS1)), 2)
+
+        return RSI1
+
+    else:  # Use SMA
+        # Calculate the SMA
+        roll_up2 = up.rolling(window_length).mean()
+        roll_down2 = down.abs().rolling(window_length).mean()
+
+        # Calculate the RSI based on SMA
+        RS2 = roll_up2 / roll_down2
+        RSI2 = round(100.0 - (100.0 / (1.0 + RS2)), 2)
+
+        return RSI2
+
+def overbought_oversold(series, last_n_days = 5):
+    """
+    Input: A pandas series of RSI data; last n days
+    Function: Identify if the stock is overbrought/ oversold or not
+    Output: Indicator
+    """
+    sub = series[-last_n_days:]
+    
+    try:
+        if any(sub <= 20) == True:
+            indicator = "Oversold"
+
+        elif all(sub > 20) == True & any(sub <= 30) == True:
+            indicator = "Maybe Oversold"
+
+        elif all(sub < 70) == True & any(sub >= 70) == True:
+            indicator = "Maybe Overbought"
+
+        if any(sub >= 80) == True:
+            indicator = "Overbought"
+        
+        return indicator
+    
+    except:
+        return None
+        
+
+def all_RSI_indicators(symbol, start = datetime(2020,1,1), end = datetime.now(), last_n_days = 5):
+    """
+    Input: symbol, start date, end date, last n days
+    Function: Work with multiprocessing to calculate RSI indicator for all stock symbol
+    Output: symbol and indicator
+    """
+    df =  functions.Stock(symbol,start = start, end = end).get_hist_data()
+    rsi = RSI(df['Close'])
+    ind = overbought_oversold(rsi, last_n_days = last_n_days)
+    return [symbol, ind]
