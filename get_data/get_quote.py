@@ -15,4 +15,4 @@ class Quote:
             df = df.reset_index(drop = False)
             return df
         except:
-            print('Could not get ' + str(self.symbol) + ' from Yahoo Finance')
+            raise Exception('Could not get ' + str(self.symbol) + ' from Yahoo Finance')
