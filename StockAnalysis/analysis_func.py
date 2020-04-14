@@ -9,7 +9,7 @@ class Analysis(GetData):
         super().__init__(symbol, start, end)
 
     def get_hist_data(self):
-        data = super().get_quote()
+        data = super().get_hist_data()
         self.data = data
         self.data_gotten = True
 
@@ -111,13 +111,13 @@ class Analysis(GetData):
         RSI = round(100.0 - (100.0 / (1.0 + RS)), 2)
         return RSI
 
-    def overbought_oversold(RSI_series=None, last_n_days = 5):
+    def overbought_oversold(RSI_series, last_n_days = 5):
         """
         Input: A pandas series of RSI data; last n days
         Function: Identify if the stock is overbrought/ oversold or not
         Output: Indicator
         """
-        sub = series[-last_n_days:]
+        sub = RSI_series[-last_n_days:]
         if any(sub <= 20):
             indicator = "Oversold"
         elif all(sub > 20) & any(sub <= 30):
