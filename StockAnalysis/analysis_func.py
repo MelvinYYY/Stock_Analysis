@@ -1,6 +1,6 @@
 from datetime import datetime
 import pandas as pd
-from GeStocktData import GetData
+from GetStockData import GetData
 
 class Analysis(GetData):
 
