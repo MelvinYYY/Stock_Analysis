@@ -30,7 +30,7 @@ def get_nasdaq_tickers():
     Return: a pandas dataframe ticker list
     '''
     # read with pandas
-    nasdaq_tickers = pd.read_csv('nasdaq_tickers.txt', sep='|', header=0)
+    nasdaq_tickers = pd.read_csv('GetStockData/nasdaq_tickers.txt', sep='|', header=0)
     # remove the footage
     nasdaq_tickers = nasdaq_tickers[:-1]
     # Apply filters
@@ -51,7 +51,7 @@ def get_nasdaq_tickers():
 
 def get_other_tickers():
     # read with pandas
-    nyse_tickers = pd.read_csv('other_tickers.txt', sep='|', header=0)
+    nyse_tickers = pd.read_csv('GetStockData/other_tickers.txt', sep='|', header=0)
     # remove the footage
     nyse_tickers = nyse_tickers[:-1]
     # Apply filters

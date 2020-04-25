@@ -1,6 +1,9 @@
+import sys
+sys.path.insert(1, '/stock_analysis/GetStockData')
+
 from datetime import datetime
 import pandas as pd
-from GeStocktData import GetData
+from GetStockData import GetData
 
 class Analysis(GetData):
 
@@ -24,62 +27,74 @@ class Analysis(GetData):
         """
         Return a list of Max/Min/Last Pricing information in a list
         """
-        df = self.check_data_availability(data)
+        try:
+            df = self.check_data_availability(data)
 
-        closeMax = df.iloc[df['Close'].idxmax()]
-        closeMin = df.iloc[df['Close'].idxmin()]
-        closeCurrent = df.iloc[-1,:]
-        result = [self.symbol,
-                 closeMax['Date'].date(), # Date of highest closing price
-                 closeMax['Close'],       # Max closing price
-                 closeMin['Date'].date(), # Date of lowest closing price
-                 closeMin['Close'],       # Min closing Price
-                 closeCurrent['Date'].date(), # Last Close price
-                 closeCurrent['Close'],    # Last Close Price
-                 round((closeMin['Close'] - closeMax['Close'])/closeMax['Close'], 4), # Precent change from high to low
-                 round((closeCurrent['Close'] - closeMax['Close'])/closeMax['Close'], 4) # Precent change from high to current
-                ]
-        return result
+            closeMax = df.iloc[df['Close'].idxmax()]
+            closeMin = df.iloc[df['Close'].idxmin()]
+            closeCurrent = df.iloc[-1,:]
+            result = [self.symbol,
+                     closeMax['Date'].date(), # Date of highest closing price
+                     closeMax['Close'],       # Max closing price
+                     closeMin['Date'].date(), # Date of lowest closing price
+                     closeMin['Close'],       # Min closing Price
+                     closeCurrent['Date'].date(), # Last Close price
+                     closeCurrent['Close'],    # Last Close Price
+                     round((closeMin['Close'] - closeMax['Close'])/closeMax['Close'], 4), # Precent change from high to low
+                     round((closeCurrent['Close'] - closeMax['Close'])/closeMax['Close'], 4) # Precent change from high to current
+                    ]
+            return result
+        
+        except:
+            pass
 
     # https://quant.stackexchange.com/questions/11264/calculating-bollinger-band-correctly
     def Bollinger_Band(self, window_size = 20, num_sd = 2, data=None):
         """
         returns a data frame with average, upper band, and lower band
         """
-        df = self.check_data_availability(data)
+        try:
+            df = self.check_data_availability(data)
 
-        df['rolling_mean'] = df['Close'].rolling(window=window_size).mean()
-        df['rolling_std']  = df['Close'].rolling(window=window_size).std()
-        df['upper_band'] =  round(df['rolling_mean'] + ( df['rolling_std']*num_sd), 4)
-        df['lower_band'] =  round(df['rolling_mean'] - ( df['rolling_std']*num_sd), 4)
-        df = df.drop(columns=['rolling_std'])
-        return df
+            df['rolling_mean'] = df['Close'].rolling(window=window_size).mean()
+            df['rolling_std']  = df['Close'].rolling(window=window_size).std()
+            df['upper_band'] =  round(df['rolling_mean'] + ( df['rolling_std']*num_sd), 4)
+            df['lower_band'] =  round(df['rolling_mean'] - ( df['rolling_std']*num_sd), 4)
+            df = df.drop(columns=['rolling_std'])
+            return df
+        
+        except:
+            pass
 
     def BBand_Outliers(self, last_n_days = 3, window_size = 20, num_sd = 2, data=None):
         """
         Identify if the price was in or out from the bollinger band
         """
-        df = self.Bollinger_Band(window_size, num_sd, data)
-        subdf = df.tail(last_n_days).reset_index()
-        if subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'upper_band']].drop(
-                'upper_band', 1).gt(subdf['upper_band'], 0).all(1).any() == True:
-            indicator = "Above Upper Band"
+        try:
+            df = self.Bollinger_Band(window_size, num_sd, data)
+            subdf = df.tail(last_n_days).reset_index()
+            if subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'upper_band']].drop(
+                    'upper_band', 1).gt(subdf['upper_band'], 0).all(1).any() == True:
+                indicator = "Above Upper Band"
 
-        elif subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'upper_band']].drop(
-                'upper_band', 1).gt(subdf['upper_band'], 0).any(1).any() == True:
-            indicator = "On Upper Band"
+            elif subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'upper_band']].drop(
+                    'upper_band', 1).gt(subdf['upper_band'], 0).any(1).any() == True:
+                indicator = "On Upper Band"
 
-        elif subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'lower_band']].drop(
-                'lower_band', 1).lt(subdf['lower_band'], 0).all(1).any() == True:
-            indicator = "Below Lower Band"
+            elif subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'lower_band']].drop(
+                    'lower_band', 1).lt(subdf['lower_band'], 0).all(1).any() == True:
+                indicator = "Below Lower Band"
 
-        elif subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'lower_band']].drop(
-                'lower_band', 1).lt(subdf['lower_band'], 0).any(1).any() == True:
-            indicator = "On Lower Band"
-        else:
-            indicator = " "
+            elif subdf.loc[:, ['High', 'Low', 'Open', 'Close', 'lower_band']].drop(
+                    'lower_band', 1).lt(subdf['lower_band'], 0).any(1).any() == True:
+                indicator = "On Lower Band"
+            else:
+                indicator = None
 
-        return [self.symbol, indicator]
+            return [self.symbol, indicator]
+        
+        except:
+            pass
 
 
     def RSI(self, series=None, window=14, ewma=True):
