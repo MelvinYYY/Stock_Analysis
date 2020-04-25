@@ -4,7 +4,7 @@ from contextlib import closing
 import pandas as pd
 
 
-def update_tickers_list(self):
+def update_tickers_list():
     '''
     Get the most up-to-date tickers list from the ftp, which updates every business day
     '''
@@ -13,7 +13,7 @@ def update_tickers_list(self):
             request.urlopen(
                 'ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt')
     ) as r:
-        with open('nasdaq_tickers.txt', 'wb') as f:
+        with open('GetStockData/nasdaq_tickers.txt', 'wb') as f:
             shutil.copyfileobj(r, f)
 
     # Download the nyse and other tickers list
@@ -21,7 +21,7 @@ def update_tickers_list(self):
             request.urlopen(
                 'ftp://ftp.nasdaqtrader.com/SymbolDirectory/otherlisted.txt')
     ) as r:
-        with open('other_tickers.txt', 'wb') as f:
+        with open('GetStockData/other_tickers.txt', 'wb') as f:
             shutil.copyfileobj(r, f)
 
 
